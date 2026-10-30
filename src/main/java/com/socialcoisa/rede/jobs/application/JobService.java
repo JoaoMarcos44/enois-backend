@@ -122,7 +122,7 @@ public class JobService {
 			String salary, String currency, String salaryMin, String salaryMax, String salaryPeriod,
 			String description, List<String> skills, List<JobFieldInput> fields, String userId) {
 		validate(title, company, type, level);
-		Job existing = repository.findById(jobId)
+		Job existing = repository.findByIdForUpdate(jobId)
 			.orElseThrow(() -> new ApiException(404, "JOB_NOT_FOUND", "Vaga nao encontrada."));
 		if (!existing.postedBy().equals(userId)) {
 			throw new ApiException(403, "NOT_OWNER", "Voce nao pode editar uma vaga que nao criou.");
@@ -145,7 +145,7 @@ public class JobService {
 	 */
 	@Transactional
 	public Job close(String jobId, String userId) {
-		// Mesmo lock do apply: encerrar e candidatar-se disputam o mesmo ponto de serializacao.
+		// Editar, encerrar e candidatar-se compartilham a mesma trava da vaga.
 		Job existing = repository.findByIdForUpdate(jobId)
 			.orElseThrow(() -> new ApiException(404, "JOB_NOT_FOUND", "Vaga nao encontrada."));
 		if (!existing.postedBy().equals(userId)) {

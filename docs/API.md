@@ -462,7 +462,12 @@ perfil (os dois ou nenhum, UF válida, `""` nos dois limpa no PATCH, ausentes ma
 | POST | `/api/jobs/{jobId}/saves` | Salvar vaga | Sim |
 | DELETE | `/api/jobs/{jobId}/saves` | Remover vaga salva | Sim |
 
-Nota: Criar vaga requer reputação >= 300.
+Criar vaga requer reputação maior que 150.
+
+Editar uma vaga (`PUT /api/jobs/{jobId}`) preserva `status` e `closedAt`,
+inclusive quando a edição concorre com `POST /api/jobs/{jobId}/close`. Edição,
+encerramento e candidatura leem o estado sob o mesmo lock da vaga; editar uma vaga
+encerrada não a reabre. Candidatura nova continua retornando `409 JOB_CLOSED`.
 
 ---
 

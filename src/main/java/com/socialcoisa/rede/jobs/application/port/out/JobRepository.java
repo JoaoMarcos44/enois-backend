@@ -13,7 +13,7 @@ public interface JobRepository {
 
 	/**
 	 * Igual ao findById, mas travando a linha da vaga ate o fim da transacao. Usado por
-	 * candidatar-se e encerrar para serializar as duas operacoes.
+	 * editar, candidatar-se e encerrar para serializar as operacoes.
 	 */
 	Optional<Job> findByIdForUpdate(String id);
 

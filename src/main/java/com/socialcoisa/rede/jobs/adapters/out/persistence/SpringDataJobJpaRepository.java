@@ -36,7 +36,7 @@ interface SpringDataJobJpaRepository extends JpaRepository<JobJpaEntity, String>
 
 	/**
 	 * Le a vaga travando a linha ate o fim da transacao. E o ponto de serializacao entre
-	 * candidatar-se e encerrar: quem pega o lock primeiro decide, e o outro le o estado ja mudado —
+	 * editar, candidatar-se e encerrar: quem pega o lock primeiro decide, e o outro le o estado ja mudado —
 	 * sem isso uma candidatura podia ler OPEN, o encerramento commitar no meio e ela gravar depois.
 	 */
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
