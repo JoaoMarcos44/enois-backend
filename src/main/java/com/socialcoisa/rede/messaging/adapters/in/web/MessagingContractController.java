@@ -193,15 +193,19 @@ class MessagingContractController {
 			@RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
 			@PathVariable String conversationId, @RequestBody SendMessageRequest request) {
 		CurrentUser user = currentUserResolver.resolve(sessionToken);
-		String hash = idempotency.hash(Map.of("conversationId", conversationId, "text",
+		String replyTo = request.replyToId() != null && !request.replyToId().isBlank()
+			? request.replyToId().trim() : null;
+		var payload = new java.util.LinkedHashMap<String, Object>(Map.of("conversationId", conversationId, "text",
 			request.text() == null ? "" : request.text(), "mediaIds",
 			request.mediaIds() == null ? List.of() : request.mediaIds(), "mediaSpoiler",
 			Boolean.TRUE.equals(request.mediaSpoiler())));
+		if (replyTo != null) {
+			payload.put("replyToId", replyTo);
+		}
+		String hash = idempotency.hash(payload);
 		return idempotency.execute(user.id(), "POST", "/api/conversations/{conversationId}/messages", idempotencyKey,
 			hash, () -> {
 				Message msg;
-				String replyTo = request.replyToId() != null && !request.replyToId().isBlank()
-					? request.replyToId().trim() : null;
 				if (Boolean.TRUE.equals(request.e2e())) {
 					msg = messagingService.sendE2eMessage(conversationId, user.id().value(), request.text(),
 						request.iv(), request.mediaIds(), Boolean.TRUE.equals(request.mediaSpoiler()), replyTo);

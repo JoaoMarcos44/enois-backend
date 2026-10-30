@@ -202,12 +202,13 @@ public class MessagingService {
 				.filter(m -> m.conversationId().equals(conversationId))
 				.orElseThrow(() -> new ApiException(400, "INVALID_REPLY", "Mensagem citada nao encontrada nesta conversa."));
 		}
-		// Duplo clique/retry: a MESMA mensagem (texto + mídias) do mesmo remetente em até 2
-		// minutos devolve a linha já criada em vez de duplicar e notificar de novo.
+		// Duplo clique/retry: a mesma mensagem do mesmo remetente em até 10 segundos
+		// devolve a linha já criada em vez de duplicar e notificar de novo.
 		var duplicate = repository.findRecentDuplicate(conversationId, senderId, corpo,
 			clock.instant().minusSeconds(10));
 		if (duplicate.isPresent() && duplicate.get().mediaIds().equals(midias)
-				&& duplicate.get().mediaSpoiler() == mediaSpoiler) {
+				&& duplicate.get().mediaSpoiler() == mediaSpoiler
+				&& java.util.Objects.equals(duplicate.get().replyToId(), replyToId)) {
 			return duplicate.get();
 		}
 		String id = "message_" + UUID.randomUUID().toString().replace("-", "");

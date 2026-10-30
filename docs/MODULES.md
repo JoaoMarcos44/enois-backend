@@ -937,6 +937,11 @@ A ocorrência nova herda cidade/UF da anterior (o encontro segue no mesmo lugar 
 A ocultação afeta somente o solicitante e aceita mensagens da conversa informada. Seleções
 inválidas são rejeitadas integralmente. A operação exige autenticação e chave de idempotência.
 
+O envio aceita `replyToId` para citar uma mensagem da mesma conversa. O alvo da resposta faz parte
+do hash de idempotência e da comparação de duplicatas na janela de 10 segundos. Respostas com o
+mesmo texto e alvos diferentes são mensagens distintas. Reutilizar a chave com outro alvo retorna
+`409 IDEMPOTENCY_PAYLOAD_CONFLICT`. Alvo vazio equivale a mensagem sem citação.
+
 ---
 
 ## 13. Notifications (Notificações)
