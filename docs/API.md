@@ -462,7 +462,18 @@ perfil (os dois ou nenhum, UF válida, `""` nos dois limpa no PATCH, ausentes ma
 | POST | `/api/jobs/{jobId}/saves` | Salvar vaga | Sim |
 | DELETE | `/api/jobs/{jobId}/saves` | Remover vaga salva | Sim |
 
-Nota: Criar vaga requer reputação >= 300.
+`GET /api/jobs/applications?limit=20&cursor=...` lista as vagas em que a pessoa autenticada
+se candidatou. A resposta é `{items, nextCursor}`. A ordenação usa a data da candidatura
+decrescente e, em caso de empate, seu id decrescente. Vagas encerradas continuam na lista.
+Vagas excluídas e suas candidaturas saem do histórico.
+
+`nextCursor` é uma string opaca. Envie o valor integral na próxima chamada, sem converter para
+data. Neste endpoint, o cursor contém a data e o id da candidatura. Timestamps isolados também
+são aceitos como data de candidatura. Cursores da versão anterior usavam a data de publicação
+da vaga e podem exigir reiniciar a navegação após atualizar. Cursor inválido retorna
+`400 INVALID_CURSOR`. As demais listas de vagas mantêm seu cursor atual.
+
+Nota: Criar vaga requer reputação > 150.
 
 ---
 

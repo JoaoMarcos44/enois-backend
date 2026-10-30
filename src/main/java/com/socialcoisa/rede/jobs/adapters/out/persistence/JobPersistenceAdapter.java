@@ -12,6 +12,7 @@ import org.springframework.util.StringUtils;
 
 import com.socialcoisa.rede.jobs.application.port.out.JobRepository;
 import com.socialcoisa.rede.jobs.domain.Job;
+import com.socialcoisa.rede.jobs.domain.AppliedJob;
 import com.socialcoisa.rede.shared.search.BooleanQuery;
 
 import jakarta.persistence.EntityManager;
@@ -254,19 +255,9 @@ class JobPersistenceAdapter implements JobRepository {
 	}
 
 	@Override
-	public List<Job> findAppliedByUser(String userId, Instant before, int limit) {
-		List<String> jobIds = applicationRepo.findJobIdsByUserId(userId, PageRequest.of(0, limit));
-		if (jobIds.isEmpty()) {
-			return List.of();
-		}
-		java.util.Map<String, Job> byId = springData.findByIdIn(jobIds).stream()
-			.map(JobJpaEntity::toDomain)
-			.collect(java.util.stream.Collectors.toMap(Job::id, job -> job));
-		// Mantem a ordem das candidaturas (mais recentes primeiro), aplicando o cursor.
-		return jobIds.stream()
-			.map(byId::get)
-			.filter(java.util.Objects::nonNull)
-			.filter(job -> before == null || !job.postedAt().isAfter(before))
+	public List<AppliedJob> findAppliedByUser(String userId, Instant before, Long beforeId, int limit) {
+		return applicationRepo.findAppliedJobsByUser(userId, before, beforeId, PageRequest.of(0, limit)).stream()
+			.map(row -> new AppliedJob(((JobJpaEntity) row[0]).toDomain(), (Instant) row[1], (Long) row[2]))
 			.toList();
 	}
 

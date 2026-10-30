@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.socialcoisa.rede.jobs.domain.Job;
+import com.socialcoisa.rede.jobs.domain.AppliedJob;
 
 public interface JobRepository {
 
@@ -26,7 +27,7 @@ public interface JobRepository {
 	List<Job> findByPostedBy(String userId, java.time.Instant before, int limit);
 
 	/** Vagas em que o usuario se candidatou, mais recentes primeiro. */
-	List<Job> findAppliedByUser(String userId, java.time.Instant before, int limit);
+	List<AppliedJob> findAppliedByUser(String userId, java.time.Instant before, Long beforeId, int limit);
 
 	int countApplications(String jobId);
 

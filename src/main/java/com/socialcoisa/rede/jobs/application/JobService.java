@@ -462,8 +462,9 @@ public class JobService {
 	}
 
 	/** Vagas em que o usuario se candidatou. */
-	public List<Job> listApplications(String userId, java.time.Instant before, int limit) {
-		return repository.findAppliedByUser(userId, before, limit);
+	public List<com.socialcoisa.rede.jobs.domain.AppliedJob> listApplications(String userId,
+			java.time.Instant before, Long beforeId, int limit) {
+		return repository.findAppliedByUser(userId, before, beforeId, limit);
 	}
 
 	public java.util.Set<String> appliedJobIds(String userId, java.util.List<String> jobIds) {

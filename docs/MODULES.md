@@ -779,6 +779,20 @@ Implementa: `CreateMediaUploadUseCase`, `GetMediaAssetUseCase`, `RequestMediaDel
 | `save(...)` | POST /api/jobs/{jobId}/saves |
 | `removeSave(...)` | DELETE /api/jobs/{jobId}/saves |
 
+`GET /api/jobs/applications` lista as vagas em que a pessoa autenticada se candidatou.
+A ordem é a data da candidatura decrescente, com desempate pelo id da candidatura decrescente.
+Vagas encerradas continuam no histórico. Vagas excluídas saem do histórico junto com suas candidaturas.
+O banco aplica o cursor antes do limite, para alcançar todas as candidaturas.
+
+A resposta mantém `{items, nextCursor}`. `nextCursor` é uma string opaca que o cliente envia
+sem interpretar na próxima chamada. Neste endpoint, ela contém a data e o id da última candidatura.
+Timestamps isolados continuam aceitos como data de candidatura, sem desempate naquela data.
+Cursores emitidos antes desta versão usavam a publicação da vaga e podem exigir reiniciar a navegação.
+Cursor inválido responde `400 INVALID_CURSOR`. O cursor das demais listas de vagas não muda.
+
+`JobApplicationPaginationTests` cobre páginas de um e dois itens, datas de publicação e candidatura
+em ordens diferentes, empates, vagas encerradas, vaga excluída, isolamento por candidato e cursor legado.
+
 ---
 
 ## 10. Events (Eventos)

@@ -251,9 +251,31 @@ class JobContractController {
 			@RequestParam(defaultValue = "20") int limit,
 			@RequestHeader(value = "X-Session-Token", required = false) String sessionToken) {
 		CurrentUser user = currentUserResolver.resolve(sessionToken);
-		Instant before = cursorCodec.decode(cursor).orElse(null);
-		List<Job> jobs = jobService.listApplications(user.id().value(), before, limit);
-		return page(jobs, limit, user.id().value(), PageKind.APPLICATIONS, false, null);
+		ApplicationCursor before = applicationCursor(cursor);
+		var found = jobService.listApplications(user.id().value(), before.appliedAt(), before.applicationId(), limit);
+		List<Job> jobs = found.stream().map(com.socialcoisa.rede.jobs.domain.AppliedJob::job).toList();
+		var response = page(jobs, limit, user.id().value(), PageKind.APPLICATIONS, false, null);
+		String next = found.size() == limit
+			? found.getLast().appliedAt() + "|" + found.getLast().applicationId() : null;
+		return new PageResponse<>(response.items(), next);
+	}
+
+	private record ApplicationCursor(Instant appliedAt, Long applicationId) {
+	}
+
+	private ApplicationCursor applicationCursor(String cursor) {
+		if (cursor == null || cursor.isBlank()) return new ApplicationCursor(null, null);
+		String[] parts = cursor.split("\\|", -1);
+		try {
+			if (parts.length > 2) throw new IllegalArgumentException();
+			Instant at = cursorCodec.decode(parts[0]).orElseThrow();
+			Long id = parts.length == 2 ? Long.valueOf(parts[1]) : null;
+			if (id != null && id <= 0) throw new IllegalArgumentException();
+			return new ApplicationCursor(at, id);
+		}
+		catch (RuntimeException invalid) {
+			throw new ApiException(400, "INVALID_CURSOR", "Cursor invalido.");
+		}
 	}
 
 	@GetMapping("/companies")
