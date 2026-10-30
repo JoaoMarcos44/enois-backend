@@ -2,6 +2,7 @@ package com.socialcoisa.rede.events.adapters.out.persistence;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -63,7 +64,9 @@ class EventPersistenceAdapter implements EventRepository {
 
 	@Override
 	public Optional<Event> findLatestInSeries(String seriesId) {
-		return springData.findFirstBySeriesIdOrderByCreatedAtDesc(seriesId).map(EventJpaEntity::toDomain);
+		return springData.findBySeriesId(seriesId).stream().map(EventJpaEntity::toDomain)
+			.filter(event -> event.scheduledDate().isPresent())
+			.max(Comparator.comparing(event -> event.scheduledDate().orElseThrow()));
 	}
 
 	@Override

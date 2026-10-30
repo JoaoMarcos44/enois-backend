@@ -27,7 +27,7 @@ interface SpringDataEventJpaRepository extends JpaRepository<EventJpaEntity, Str
 
 	List<EventJpaEntity> findByRecurrenceNot(String recurrence);
 
-	java.util.Optional<EventJpaEntity> findFirstBySeriesIdOrderByCreatedAtDesc(String seriesId);
+	List<EventJpaEntity> findBySeriesId(String seriesId);
 
 	boolean existsBySeriesIdAndDate(String seriesId, String date);
 

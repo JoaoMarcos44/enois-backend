@@ -499,6 +499,8 @@ encontros não online (`IN_PERSON`, `HYBRID`) daquele lugar, com a cidade compar
   agenda a próxima (mesmo título, formato, host, capa, link e local; presenças **não** são copiadas) e quem confirmou
   presença recebe a notificação `EVENT_NEXT_OCCURRENCE` com `href` `/eventos?evento={id}`. Mensal conta a partir
   da primeira ocorrência: dia 31 cai no último dia dos meses curtos e volta ao 31 depois.
+  A mais recente é a de maior data agendada, em ISO ou `dd/MM/yyyy`, mesmo quando os registros foram criados
+  no mesmo segundo ou em outra ordem. Datas ilegíveis não participam dessa seleção.
 - A série para (recorrência volta a `NONE`) quando o dono desliga, quando uma ocorrência é apagada (pelo dono ou
   pela moderação), quando a conta do dono foi excluída ou está sancionada, ou quando o evento cai no filtro de
   texto suspeito.

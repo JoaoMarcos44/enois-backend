@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.HashMap;
@@ -15,6 +17,8 @@ import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -26,7 +30,10 @@ import com.socialcoisa.rede.events.application.port.out.EventRepository;
 import com.socialcoisa.rede.events.domain.Event;
 import com.socialcoisa.rede.events.domain.EventAttendee;
 import com.socialcoisa.rede.events.domain.EventRecurrence;
+import com.socialcoisa.rede.identity.application.port.out.CredentialRepository;
 import com.socialcoisa.rede.notifications.application.NotificationService;
+import com.socialcoisa.rede.shared.sanctions.SanctionGateReader;
+import com.socialcoisa.rede.shared.security.SuspiciousText;
 import com.socialcoisa.rede.shared.web.TestAuthHelper;
 
 import tools.jackson.databind.JsonNode;
@@ -54,6 +61,15 @@ class EventRecurrenceTests {
 
 	@Autowired
 	private NotificationService notifications;
+
+	@Autowired
+	private CredentialRepository credentials;
+
+	@Autowired
+	private SanctionGateReader sanctionGate;
+
+	@Autowired
+	private SuspiciousText suspiciousText;
 
 	private TestAuthHelper auth;
 
@@ -120,6 +136,86 @@ class EventRecurrenceTests {
 			.toList();
 		assertThat(received).hasSize(1);
 		assertThat(received.get(0).href()).isEqualTo("/eventos?evento=" + next.id());
+	}
+
+	@ParameterizedTest
+	@CsvSource({"31/01/2027, 2027-02-07", "2027-01-31, 07/02/2027"})
+	void latestOccurrenceUsesParsedDateWhenCreationTimestampsTie(String firstDate, String laterDate) {
+		String seriesId = "evrec_order_tie_" + firstDate.replace('/', '-');
+		Instant createdAt = Instant.parse("2027-01-01T12:00:00Z");
+		Event first = seriesOccurrence(seriesId, seriesId, firstDate, "evrec order first", "evrec_order_host", createdAt);
+		Event later = seriesOccurrence(seriesId + "_next", seriesId, laterDate, "evrec order later", "evrec_order_host", createdAt);
+		events.save(first);
+		events.save(later);
+
+		assertThat(events.findById(first.id()).orElseThrow().createdAt())
+			.isEqualTo(events.findById(later.id()).orElseThrow().createdAt());
+		assertThat(events.findLatestInSeries(seriesId).orElseThrow().id()).isEqualTo(later.id());
+	}
+
+	@Test
+	void latestOccurrenceUsesScheduleEvenWhenItWasCreatedEarlier() {
+		String seriesId = "evrec_order_older_created";
+		Instant createdAt = Instant.parse("2027-01-01T12:00:00Z");
+		events.save(seriesOccurrence(seriesId, seriesId, "31/01/2027", "evrec order first", "evrec_order_host", createdAt));
+		Event later = seriesOccurrence(seriesId + "_next", seriesId, "2027-02-07", "evrec order later",
+			"evrec_order_host", createdAt.minusSeconds(1));
+		events.save(later);
+		assertThat(events.findLatestInSeries(seriesId).orElseThrow().id()).isEqualTo(later.id());
+		events.save(seriesOccurrence(seriesId + "_unreadable", seriesId, "sem data", "evrec order unreadable",
+			"evrec_order_host", createdAt.plusSeconds(1)));
+
+		assertThat(events.findLatestInSeries(seriesId).orElseThrow().id()).isEqualTo(later.id());
+	}
+
+	@Test
+	void seriesWithoutReadableDatesHasNoLatestOccurrence() {
+		String seriesId = "evrec_order_unreadable";
+		events.save(seriesOccurrence(seriesId, seriesId, "sem data", "evrec order unreadable", "evrec_order_host",
+			Instant.parse("2027-01-01T12:00:00Z")));
+
+		assertThat(events.findLatestInSeries(seriesId)).isEmpty();
+		assertThat(events.findLatestInSeries("evrec_order_missing")).isEmpty();
+	}
+
+	@Test
+	void schedulerContinuesFromLatestOccurrenceWhenCreationTimestampsTie() throws Exception {
+		var host = auth.authenticate("evrec_order_host");
+		var attendee = auth.authenticate("evrec_order_guest");
+		String seriesId = "evrec_order_worker";
+		Instant now = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+		Instant createdAt = now.minusSeconds(1);
+		LocalDate latestDate = LocalDate.ofInstant(now, ZoneOffset.UTC).minusDays(1);
+		String firstDate = latestDate.minusWeeks(1).format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/uuuu"));
+		Event first = seriesOccurrence(seriesId, seriesId, firstDate, "evrec order first", host.userId(), createdAt);
+		Event latest = seriesOccurrence(seriesId + "_next", seriesId, latestDate.toString(), "evrec order current",
+			host.userId(), createdAt);
+		first.changeRecurrence(EventRecurrence.WEEKLY, seriesId);
+		latest.changeRecurrence(EventRecurrence.WEEKLY, seriesId);
+		events.save(first);
+		events.save(latest);
+		events.saveAttendee(EventAttendee.attend(latest.id(), attendee.userId(), createdAt));
+		var worker = new EventRecurrenceService(events, notifications, credentials, sanctionGate, suspiciousText,
+			Clock.fixed(now, ZoneOffset.UTC), true);
+
+		try {
+			worker.spawnNextOccurrences();
+			worker.spawnNextOccurrences();
+
+			String nextDate = latestDate.plusWeeks(1).toString();
+			assertThat(events.existsInSeries(seriesId, nextDate)).isTrue();
+			Event next = events.findLatestInSeries(seriesId).orElseThrow();
+			assertThat(next.date()).isEqualTo(nextDate);
+			assertThat(next.title()).isEqualTo(latest.title());
+			assertThat(events.countAttendees(next.id())).isZero();
+			var received = notifications.list(attendee.userId(), null, 50).stream()
+				.filter(n -> "EVENT_NEXT_OCCURRENCE".equals(n.kind())).toList();
+			assertThat(received).hasSize(1);
+			assertThat(received.get(0).href()).isEqualTo("/eventos?evento=" + next.id());
+		}
+		finally {
+			events.updateSeriesRecurrence(seriesId, EventRecurrence.NONE);
+		}
 	}
 
 	@Test
@@ -233,6 +329,12 @@ class EventRecurrenceTests {
 
 		assertThat(events.findLatestInSeries(eventId).orElseThrow().id()).isEqualTo(eventId);
 		assertThat(events.findById(eventId).orElseThrow().recurrence()).isEqualTo(EventRecurrence.NONE);
+	}
+
+	private Event seriesOccurrence(String id, String seriesId, String date, String title, String host, Instant createdAt) {
+		Event event = Event.create(id, title, date, "19:00", "Online", "Énóis", null, null, null, host, createdAt);
+		event.changeRecurrence(EventRecurrence.NONE, seriesId);
+		return event;
 	}
 
 	private JsonNode create(TestAuthHelper.AuthSession host, String title, String date, String recurrence, String key)
