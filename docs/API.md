@@ -462,7 +462,18 @@ perfil (os dois ou nenhum, UF válida, `""` nos dois limpa no PATCH, ausentes ma
 | POST | `/api/jobs/{jobId}/saves` | Salvar vaga | Sim |
 | DELETE | `/api/jobs/{jobId}/saves` | Remover vaga salva | Sim |
 
-Nota: Criar vaga requer reputação >= 300.
+Criar vaga requer reputação maior que 150.
+
+Em criar e editar, `salaryMin` é obrigatório e maior que zero; `salaryMax` é opcional,
+mas, quando preenchido, precisa ser válido e não pode ser menor que o mínimo.
+Aceita inteiros (`1500`), agrupamento brasileiro (`1.500`), centavos (`1.500,50`
+ou `1500.50`) e prefixo de moeda conhecido (`R$ 1.500`, `US$`, `$`, `€`).
+Ponto com grupos de três dígitos indica milhar: `0.001` representa `1`.
+Os valores admitem até duas casas decimais e o teto `9999999999,99`, correspondente
+a `DECIMAL(12,2)`. Sinais, letras, agrupamento inválido, precisão maior ou valor
+acima do teto retornam `400 INVALID_SALARY_AMOUNT`, sem arredondamento silencioso.
+Mínimo ausente/zero retorna `400 SALARY_REQUIRED`; faixa invertida,
+`400 INVALID_SALARY_RANGE`.
 
 ---
 

@@ -41,6 +41,11 @@ public class JobService {
 
 	private static final int MAX_SALARY_LENGTH = 120;
 
+	private static final BigDecimal MAX_SALARY_AMOUNT = new BigDecimal("9999999999.99");
+
+	private static final java.util.regex.Pattern SALARY_AMOUNT = java.util.regex.Pattern.compile(
+		"(?i)(?:(?:R\\$|US\\$|\\$|€)\\s*)?((?:\\d{1,3}(?:\\.\\d{3})+|\\d+)(?:,\\d{1,2})?|\\d+\\.\\d{1,2})");
+
 	/** Teto da descrição da vaga: o suficiente para explicá-la, sem virar página. */
 	private static final int MAX_DESCRIPTION_LENGTH = 5000;
 
@@ -542,22 +547,26 @@ public class JobService {
 		if (!StringUtils.hasText(value)) {
 			return null;
 		}
-		String cleaned = value.replaceAll("[^0-9.,]", "");
-		if (cleaned.isEmpty()) {
-			return null;
+		var matcher = SALARY_AMOUNT.matcher(value.trim());
+		if (value.length() > MAX_SALARY_LENGTH || !matcher.matches()) {
+			throw invalidSalaryAmount();
 		}
-		if (cleaned.contains(",") && cleaned.contains(".")) {
+		String cleaned = matcher.group(1);
+		if (cleaned.contains(",")) {
 			cleaned = cleaned.replace(".", "").replace(',', '.');
-		} else if (cleaned.contains(",")) {
-			cleaned = cleaned.replace(',', '.');
 		} else if (cleaned.matches("\\d{1,3}(\\.\\d{3})+")) {
 			cleaned = cleaned.replace(".", "");
 		}
-		try {
-			return new BigDecimal(cleaned);
-		} catch (NumberFormatException e) {
-			return null;
+		BigDecimal amount = new BigDecimal(cleaned);
+		if (amount.compareTo(MAX_SALARY_AMOUNT) > 0) {
+			throw invalidSalaryAmount();
 		}
+		return amount;
+	}
+
+	private static ApiException invalidSalaryAmount() {
+		return new ApiException(400, "INVALID_SALARY_AMOUNT",
+			"Informe um valor sem sinal, com até duas casas decimais e no máximo 9.999.999.999,99.");
 	}
 
 	record SalaryRange(BigDecimal min, BigDecimal max, String period, String description) {
