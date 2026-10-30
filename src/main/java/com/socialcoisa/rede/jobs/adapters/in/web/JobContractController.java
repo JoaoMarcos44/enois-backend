@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -99,14 +98,17 @@ class JobContractController {
 	}
 
 	@PostMapping
-	ResponseEntity<JobView> create(@RequestBody CreateJobRequest body,
-			@RequestHeader(value = "X-Session-Token", required = false) String sessionToken) {
+	ResponseEntity<String> create(@RequestBody CreateJobRequest body,
+			@RequestHeader(value = "X-Session-Token", required = false) String sessionToken,
+			@RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
 		CurrentUser user = currentUserResolver.resolve(sessionToken);
-		Job job = jobService.create(body.title(), body.company(), body.logo(), body.location(), body.type(), body.level(),
-			body.salary(), body.currency(), body.salaryMin(), body.salaryMax(), body.salaryPeriod(),
-			body.description(), body.skills(), toFieldInputs(body.applicationFields()), user.id().value(),
-			body.communityAgreement());
-		return ResponseEntity.status(HttpStatus.CREATED).body(toView(job, user.id().value(), false, false, 0));
+		return idempotency.execute(user.id(), "POST", "/api/jobs", idempotencyKey, idempotency.hash(body), () -> {
+			Job job = jobService.create(body.title(), body.company(), body.logo(), body.location(), body.type(), body.level(),
+				body.salary(), body.currency(), body.salaryMin(), body.salaryMax(), body.salaryPeriod(),
+				body.description(), body.skills(), toFieldInputs(body.applicationFields()), user.id().value(),
+				body.communityAgreement());
+			return new CommandResponse(201, toView(job, user.id().value(), false, false, 0));
+		});
 	}
 
 	@GetMapping

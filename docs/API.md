@@ -462,7 +462,13 @@ perfil (os dois ou nenhum, UF válida, `""` nos dois limpa no PATCH, ausentes ma
 | POST | `/api/jobs/{jobId}/saves` | Salvar vaga | Sim |
 | DELETE | `/api/jobs/{jobId}/saves` | Remover vaga salva | Sim |
 
-Nota: Criar vaga requer reputação >= 300.
+Criar vaga requer reputação maior que 150.
+
+`POST /api/jobs` exige `Idempotency-Key`: ausente ou vazia retorna
+`400 IDEMPOTENCY_KEY_REQUIRED`. Para a mesma pessoa, chave e corpo, o servidor
+reenvia a resposta original (`201`, mesmo ID), sem criar outra vaga. Reutilizar a chave
+com qualquer campo diferente retorna `409 IDEMPOTENCY_PAYLOAD_CONFLICT`; uma publicação
+nova usa outra chave. O hash considera o corpo completo, incluindo campos da candidatura.
 
 ---
 

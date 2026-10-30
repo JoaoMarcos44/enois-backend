@@ -125,9 +125,11 @@ class ContractControllerTests {
 		// Sem titulo: valida antes do gate de reputacao, entao responde 400 (e nao 403/500).
 		mockMvc.perform(post("/jobs")
 				.header("X-Session-Token", session.token())
+				.header("Idempotency-Key", "contract-job-without-title")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"company\":\"Empresa\",\"type\":\"FULL_TIME\",\"level\":\"MID\"}"))
-			.andExpect(status().isBadRequest());
+				.content("{\"company\":\"Empresa\",\"type\":\"FULL_TIME\",\"level\":\"MID\",\"communityAgreement\":true}"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("INVALID_JOB"));
 	}
 
 	@Test

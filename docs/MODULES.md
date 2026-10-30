@@ -749,7 +749,7 @@ Implementa: `CreateMediaUploadUseCase`, `GetMediaAssetUseCase`, `RequestMediaDel
 
 | Função | Descrição |
 |---|---|
-| `create(String title, String company, String logo, String location, String type, String level, String salary, List<String> skills, String postedBy)` | Cria vaga (requer reputação >= 300) |
+| `create(String title, String company, String logo, String location, String type, String level, String salary, List<String> skills, String postedBy)` | Cria vaga (requer reputação maior que 150) |
 | `update(String jobId, ...)` | Atualiza vaga (apenas owner) |
 | `delete(String jobId, String userId)` | Deleta vaga (apenas owner) |
 | `apply(String jobId, String userId)` | Candidata-se a vaga |
