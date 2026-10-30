@@ -58,6 +58,11 @@ Cada controller principal possui uma classe de teste:
 
 ## Padrões de Teste
 
+Cada arquivo de perfil declara uma única vez cada chave de configuração.
+
+Para criar fixtures com conteúdo alterado, modifique os bytes antes de codificar. Uma troca apenas
+na representação textual pode preservar o conteúdo original e deixar o teste intermitente.
+
 ### TestAuthHelper
 
 ```java

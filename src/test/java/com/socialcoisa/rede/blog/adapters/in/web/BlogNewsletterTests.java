@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.Base64;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -173,8 +174,9 @@ class BlogNewsletterTests {
 		assinar(blog.slug(), assinante);
 
 		String token = newsletter.unsubscribeToken(blog.id(), assinante.userId());
-		char ultimo = token.charAt(token.length() - 1);
-		String adulterado = token.substring(0, token.length() - 1) + (ultimo == 'A' ? 'B' : 'A');
+		byte[] tokenBytes = Base64.getUrlDecoder().decode(token);
+		tokenBytes[0] ^= 1;
+		String adulterado = Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
 
 		// RFC 8058: sem sessao e sem Origin, corpo "List-Unsubscribe=One-Click", token na URL.
 		mockMvc.perform(post("/blogs/descadastrar").queryParam("token", adulterado)
