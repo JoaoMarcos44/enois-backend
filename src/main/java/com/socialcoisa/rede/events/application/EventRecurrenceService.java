@@ -127,7 +127,7 @@ public class EventRecurrenceService {
 		if (repository.existsInSeries(event.seriesId(), next.date())) {
 			return false;
 		}
-		next.changeRecurrence(event.recurrence(), event.seriesId());
+		next.changeRecurrence(event.recurrence(), event.seriesId(), anchor);
 		// A proxima ocorrencia acontece no mesmo lugar: sem isto ela sumia do filtro por cidade.
 		next.placeAt(event.place());
 		repository.save(next);
@@ -144,10 +144,13 @@ public class EventRecurrenceService {
 	}
 
 	/**
-	 * The series' first occurrence date (monthly math counts from it). Falls back to the event itself
-	 * when the first one is gone (deleted or purged by retention).
+	 * Rows written before the anchor was persisted can still use a surviving first occurrence.
+	 * If that date is already gone, the original calendar day cannot be recovered here.
 	 */
 	private LocalDate anchorOf(Event event) {
+		if (event.seriesAnchorDate() != null) {
+			return event.seriesAnchorDate();
+		}
 		LocalDate own = event.scheduledDate().orElse(null);
 		if (event.recurrence() != EventRecurrence.MONTHLY || event.seriesId() == null
 				|| event.seriesId().equals(event.id())) {

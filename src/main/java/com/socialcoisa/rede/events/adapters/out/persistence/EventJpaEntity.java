@@ -1,6 +1,7 @@
 package com.socialcoisa.rede.events.adapters.out.persistence;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 import com.socialcoisa.rede.events.domain.Event;
 import com.socialcoisa.rede.shared.geo.CityState;
@@ -75,6 +76,9 @@ class EventJpaEntity {
 	@Column(name = "series_id")
 	private String seriesId;
 
+	@Column(name = "series_anchor_date")
+	private LocalDate seriesAnchorDate;
+
 	protected EventJpaEntity() {
 	}
 
@@ -101,6 +105,7 @@ class EventJpaEntity {
 		e.finalAttendeesCount = event.finalAttendeesCount();
 		e.recurrence = event.recurrence().name();
 		e.seriesId = event.seriesId();
+		e.seriesAnchorDate = event.seriesAnchorDate();
 		return e;
 	}
 
@@ -113,7 +118,7 @@ class EventJpaEntity {
 		if (sanitizedAt != null) {
 			event.markSanitized(finalAttendeesCount == null ? 0 : finalAttendeesCount, sanitizedAt);
 		}
-		event.changeRecurrence(EventRecurrence.valueOf(recurrence), seriesId);
+		event.changeRecurrence(EventRecurrence.valueOf(recurrence), seriesId, seriesAnchorDate);
 		return event;
 	}
 

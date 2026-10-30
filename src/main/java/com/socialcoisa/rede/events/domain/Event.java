@@ -1,6 +1,7 @@
 package com.socialcoisa.rede.events.domain;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 import com.socialcoisa.rede.shared.geo.CityState;
 
@@ -24,6 +25,7 @@ public class Event {
 	private Integer finalAttendeesCount;
 	private EventRecurrence recurrence = EventRecurrence.NONE;
 	private String seriesId;
+	private LocalDate seriesAnchorDate;
 
 	private Event(String id, String title, String date, String time, String format, String host, String cover,
 			String streamUrl, String location, String createdBy, Instant createdAt, Instant updatedAt) {
@@ -165,8 +167,22 @@ public class Event {
 	}
 
 	public void changeRecurrence(EventRecurrence recurrence, String seriesId) {
+		LocalDate anchor = seriesAnchorDate;
+		if (anchor == null && this.seriesId == null && seriesId != null) {
+			anchor = scheduledDate().orElse(null);
+		}
+		changeRecurrence(recurrence, seriesId, anchor);
+	}
+
+	/** The calendar anchor survives independently of the first occurrence's retention. */
+	public LocalDate seriesAnchorDate() {
+		return seriesAnchorDate;
+	}
+
+	public void changeRecurrence(EventRecurrence recurrence, String seriesId, LocalDate seriesAnchorDate) {
 		this.recurrence = recurrence == null ? EventRecurrence.NONE : recurrence;
 		this.seriesId = seriesId;
+		this.seriesAnchorDate = seriesAnchorDate;
 	}
 
 	public boolean isSanitized() {

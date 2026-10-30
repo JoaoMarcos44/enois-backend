@@ -815,12 +815,18 @@ excluída ou sancionada) ou o evento cai na moderação de texto. Cron por propr
 | `nextOccurrenceDate(Event)` | Data da ocorrência seguinte (exposta como `nextOccurrenceDate`) |
 
 A ocorrência nova herda cidade/UF da anterior (o encontro segue no mesmo lugar e no filtro por cidade).
+Cada ocorrência também guarda `seriesAnchorDate`, propagada sem alteração ao gerar a próxima.
+O cálculo mensal preserva o dia original mesmo depois do expurgo da primeira ocorrência; a retenção
+de eventos e presenças continua igual. A V218 preenche séries existentes com a menor data ainda
+disponível, aceitando ISO e `dd/MM/aaaa`. Se a origem já foi expurgada, essa data é a melhor informação
+disponível e não permite deduzir um dia original maior após um mês curto. O campo é interno, sem
+alteração no contrato do frontend.
 
 ### Domain Objects
 
 | Classe | Descrição |
 |---|---|
-| `Event` | Entidade: id, title, date, time, format, host, cover, streamUrl, location, place (`CityState`, opcional), createdBy, recurrence, seriesId |
+| `Event` | Entidade: id, title, date, time, format, host, cover, streamUrl, location, place (`CityState`, opcional), createdBy, recurrence, seriesId, seriesAnchorDate |
 | `EventRecurrence` | `NONE`, `WEEKLY`, `BIWEEKLY`, `MONTHLY`; calcula a próxima data (mensal ancorada na 1ª ocorrência) |
 | `EventAttendee` | Entidade: eventId, userId |
 

@@ -498,7 +498,10 @@ encontros não online (`IN_PERSON`, `HYBRID`) daquele lugar, com a cidade compar
 - De hora em hora (`rede.events.recurrence.*`, fuso `America/Sao_Paulo`), a ocorrência mais recente que já terminou
   agenda a próxima (mesmo título, formato, host, capa, link e local; presenças **não** são copiadas) e quem confirmou
   presença recebe a notificação `EVENT_NEXT_OCCURRENCE` com `href` `/eventos?evento={id}`. Mensal conta a partir
-  da primeira ocorrência: dia 31 cai no último dia dos meses curtos e volta ao 31 depois.
+  da primeira ocorrência: dia 31 cai no último dia dos meses curtos e volta ao 31 depois, mesmo após
+  o expurgo dessa ocorrência por retenção. A âncora é metadado interno; o corpo da API não muda.
+  Para séries anteriores à V218 cuja origem já foi expurgada, usa-se a menor data sobrevivente;
+  um dia original maior que essa data não pode ser reconstruído automaticamente.
 - A série para (recorrência volta a `NONE`) quando o dono desliga, quando uma ocorrência é apagada (pelo dono ou
   pela moderação), quando a conta do dono foi excluída ou está sancionada, ou quando o evento cai no filtro de
   texto suspeito.
