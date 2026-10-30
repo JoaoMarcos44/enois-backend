@@ -26,10 +26,6 @@ public class MentorSlot {
 		return new MentorSlot(id, mentorId, startsAt, endsAt, available);
 	}
 
-	public MentorSlot book() {
-		return new MentorSlot(id, mentorId, startsAt, endsAt, false);
-	}
-
 	public String id() { return id; }
 
 	public String mentorId() { return mentorId; }

@@ -516,6 +516,19 @@ encontros não online (`IN_PERSON`, `HYBRID`) daquele lugar, com a cidade compar
 | GET | `/api/mentors/{mentorId}/slots` | Listar horários | Sim |
 | POST | `/api/mentors/{mentorId}/slots` | Criar horário | Sim |
 | POST | `/api/mentors/{mentorId}/sessions` | Agendar sessão | Sim |
+| DELETE | `/api/mentors/{mentorId}/slots/{slotId}` | Remover horário livre | Sim (dono) |
+
+Na criação de horário, `startsAt` e `endsAt` são obrigatórios, e `endsAt` precisa ser posterior
+a `startsAt`. Um intervalo inválido responde `400 INVALID_SLOT_INTERVAL`.
+
+O agendamento responde `409 SLOT_EXPIRED` quando `endsAt` é igual ou anterior ao instante atual.
+Horários ainda em curso podem ser reservados. Um horário legado com intervalo inválido responde
+`409 INVALID_SLOT_INTERVAL`. Se duas pessoas tentam reservar o mesmo horário disponível, apenas
+uma sessão é criada. A outra tentativa responde `409 SLOT_UNAVAILABLE`.
+
+A remoção de horário responde `204` quando conclui e `409 SLOT_BOOKED` quando o horário já tem reserva,
+inclusive se a reserva ocorre durante a remoção. A atualização semanal preserva horários reservados e
+continua quando um horário passa a reservado durante a reconciliação.
 
 ---
 

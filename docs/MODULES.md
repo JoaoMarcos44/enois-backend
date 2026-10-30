@@ -856,6 +856,15 @@ A ocorrência nova herda cidade/UF da anterior (o encontro segue no mesmo lugar 
 | `getById(String mentorId)` | Busca mentor por ID |
 | `getSlots(String mentorId)` | Lista horários do mentor |
 
+`createSlot` exige início e fim preenchidos, com fim posterior ao início. A reserva aceita
+horários ainda em curso e rejeita os encerrados, usando o `Clock` da aplicação. Um `UPDATE`
+condicional reserva o horário disponível antes de gravar a sessão, na mesma transação.
+Se a gravação da sessão falha, a reserva também é desfeita. Não há migração de banco.
+
+A remoção explícita e a reconciliação semanal usam a mesma exclusão condicional de horário livre,
+com o mentor e o horário no predicado. Se a reserva vence a concorrência, a remoção explícita responde
+`409 SLOT_BOOKED` e a reconciliação preserva o horário. Se a remoção vence, nenhuma sessão é criada.
+
 ### Domain Objects
 
 | Classe | Descrição |

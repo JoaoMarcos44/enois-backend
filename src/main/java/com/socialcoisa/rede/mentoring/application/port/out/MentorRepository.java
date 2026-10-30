@@ -24,7 +24,9 @@ public interface MentorRepository {
 
 	Optional<MentorSlot> findSlotById(String slotId);
 
-	void deleteSlot(String slotId);
+	boolean reserveSlot(String slotId, String mentorId, java.time.Instant now);
+
+	boolean deleteAvailableSlot(String slotId, String mentorId);
 
 	void saveSession(MentorSession session);
 

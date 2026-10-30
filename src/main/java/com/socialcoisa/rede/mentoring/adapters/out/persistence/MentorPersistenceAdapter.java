@@ -77,8 +77,13 @@ class MentorPersistenceAdapter implements MentorRepository {
 	}
 
 	@Override
-	public void deleteSlot(String slotId) {
-		slotRepo.deleteById(slotId);
+	public boolean reserveSlot(String slotId, String mentorId, Instant now) {
+		return slotRepo.reserve(slotId, mentorId, now) == 1;
+	}
+
+	@Override
+	public boolean deleteAvailableSlot(String slotId, String mentorId) {
+		return slotRepo.deleteAvailable(slotId, mentorId) == 1;
 	}
 
 	@Override

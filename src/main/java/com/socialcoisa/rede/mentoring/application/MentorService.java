@@ -97,6 +97,9 @@ public class MentorService {
 		if (!mentor.userId().equals(userId)) {
 			throw new ApiException(403, "FORBIDDEN", "Voce nao e o dono deste perfil de mentor.");
 		}
+		if (startsAt == null || endsAt == null || !endsAt.isAfter(startsAt)) {
+			throw new ApiException(400, "INVALID_SLOT_INTERVAL", "Informe um intervalo de horario valido.");
+		}
 		String id = "slot_" + UUID.randomUUID().toString().replace("-", "");
 		MentorSlot slot = MentorSlot.create(id, mentorId, startsAt, endsAt);
 		repository.saveSlot(slot);
@@ -118,10 +121,9 @@ public class MentorService {
 		if (!slot.mentorId().equals(mentor.id())) {
 			throw new ApiException(404, "SLOT_NOT_FOUND", "Horario nao encontrado.");
 		}
-		if (!slot.available()) {
+		if (!slot.available() || !repository.deleteAvailableSlot(slotId, mentor.id())) {
 			throw new ApiException(409, "SLOT_BOOKED", "Este horario ja foi reservado.");
 		}
-		repository.deleteSlot(slotId);
 	}
 
 	@Transactional
@@ -136,9 +138,18 @@ public class MentorService {
 		if (!slot.available()) {
 			throw new ApiException(409, "SLOT_UNAVAILABLE", "Horario nao esta mais disponivel.");
 		}
-		repository.saveSlot(slot.book());
+		java.time.Instant now = clock.instant();
+		if (slot.startsAt() == null || slot.endsAt() == null || !slot.endsAt().isAfter(slot.startsAt())) {
+			throw new ApiException(409, "INVALID_SLOT_INTERVAL", "Este horario possui um intervalo invalido.");
+		}
+		if (!slot.endsAt().isAfter(now)) {
+			throw new ApiException(409, "SLOT_EXPIRED", "Este horario ja foi encerrado.");
+		}
+		if (!repository.reserveSlot(slotId, mentorId, now)) {
+			throw new ApiException(409, "SLOT_UNAVAILABLE", "Horario nao esta mais disponivel.");
+		}
 		String id = "mentor_session_" + UUID.randomUUID().toString().replace("-", "");
-		MentorSession session = MentorSession.schedule(id, mentorId, menteeId, slotId, message, clock.instant());
+		MentorSession session = MentorSession.schedule(id, mentorId, menteeId, slotId, message, now);
 		repository.saveSession(session);
 		return session;
 	}
@@ -233,7 +244,7 @@ public class MentorService {
 			existing.add(slot.startsAt());
 			boolean stale = slot.available() && slot.startsAt().isAfter(now) && !wanted.contains(slot.startsAt());
 			if (stale) {
-				repository.deleteSlot(slot.id());
+				repository.deleteAvailableSlot(slot.id(), mentor.id());
 			}
 		}
 		for (Instant startsAt : wanted) {
