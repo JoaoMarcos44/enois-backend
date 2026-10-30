@@ -286,6 +286,12 @@ Implementa: `GetFeedUseCase`, `GetProfilePostsUseCase`
 | `page(List<PostView> items, int limit)` | Cria PageResponse com cursor |
 | `normalizeLimit(int limit)` | Normaliza limit entre 1 e 50 |
 
+`FOR_YOU` consulta até `3 × limit` posts em ordem cronológica e filtra comunidades de que o leitor
+não participa. Seleciona até `limit` posts antes de priorizar os tópicos preferidos dentro da página.
+O cursor mantém a fronteira cronológica dessa seleção quando há posts visíveis restantes; se a
+janela cheia não completa a página, avança pelo último post consultado, mesmo com página vazia.
+Assim, a prioridade de tópicos não faz a próxima página pular posts ainda não devolvidos.
+
 ### DeletePostService
 
 **Arquivo**: `src/main/java/com/socialcoisa/rede/feed/application/DeletePostService.java`

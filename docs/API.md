@@ -165,6 +165,11 @@ Tipos: `INSIGHT`, `ARTICLE`, `QUESTION`, `PROJECT`, `OPPORTUNITY`
 
 Query params: `tab=FOR_YOU|FOLLOWING|ALL|DISCUSSIONS|PROJECTS|RECENT`, `cursor=<base64>`, `limit=<1-50>`
 
+Em `FOR_YOU`, os tópicos preferidos têm prioridade dentro de cada página cronológica. O servidor
+mantém `nextCursor` quando há posts visíveis restantes ou a janela de busca está cheia, mesmo se o
+filtro de comunidade ou bloqueio deixar `items` vazio. O cliente continua pelo cursor retornado até
+`nextCursor=null`; o cursor não é calculado pelo último item exibido.
+
 Filtro por tipo (aba `ALL`): `type=QUESTION` (repetível). Com `resolved=true` só vêm as dúvidas com
 resposta aceita; com `resolved=false`, só as abertas; sem o parâmetro, todas. Ex.:
 `GET /api/feed?tab=ALL&type=QUESTION&resolved=false`.

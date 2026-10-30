@@ -436,10 +436,6 @@ public class GetFeedService implements GetFeedUseCase, GetProfilePostsUseCase, G
 	}
 
 	/**
-	 * O cursor sai da pagina que veio do banco, nao da lista exibida: quando um post e escondido por
-	 * bloqueio a pagina fica menor, e sem isso o scroll infinito acharia que chegou ao fim.
-	 */
-	/**
 	 * "Para voce": posts de quem a pessoa segue e os proprios, mas SO dentro das comunidades de que
 	 * ela participa (ou fora de comunidade). Post de conexao numa comunidade estranha nao entra —
 	 * feedback direto da comunidade: o feed virou vitrine de comunidade alheia. FOLLOWING continua
@@ -463,6 +459,13 @@ public class GetFeedService implements GetFeedUseCase, GetProfilePostsUseCase, G
 		List<Post> visible = fetched.stream()
 			.filter(post -> post.communityId() == null || !hiddenCommunities.contains(post.communityId()))
 			.toList();
+		String nextCursor = null;
+		if (visible.size() > limit || fetched.size() == limit * 3) {
+			Post last = visible.size() >= limit ? visible.get(limit - 1) : fetched.get(fetched.size() - 1);
+			nextCursor = cursorCodec.encode(last.createdAt());
+		}
+		// A fronteira cronologica vem antes do ranking, para nao pular posts da proxima pagina.
+		visible = visible.stream().limit(limit).toList();
 		// "O que quero ver" es AUMENTO DE PRIORIDAD, no filtro: los posts de los asuntos
 		// elegidos van primero, el resto sigue cronológico. Nada se elimina del feed.
 		Collection<String> liked = readerPreferences.likedTopics(query.userId().value());
@@ -475,11 +478,6 @@ public class GetFeedService implements GetFeedUseCase, GetProfilePostsUseCase, G
 					.thenComparing(Post::createdAt, java.util.Comparator.reverseOrder()))
 				.toList();
 		}
-		visible = visible.stream().limit(limit).toList();
-		// Cursor pela pagina EXIBIDA (nao pela bruta): repetir post ou pular pedaco seria pior do que
-		// uma pagina mais curta. So ha "proxima pagina" quando a busca bruta veio saturada.
-		String nextCursor = fetched.size() == limit * 3 && !visible.isEmpty()
-			? cursorCodec.encode(visible.get(visible.size() - 1).createdAt()) : null;
 		return new FeedPage(enrich(visible, query.userId()), nextCursor);
 	}
 
