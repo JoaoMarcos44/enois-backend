@@ -25,6 +25,7 @@ import com.socialcoisa.rede.messaging.application.port.out.MessagingRepository;
 import com.socialcoisa.rede.messaging.domain.Conversation;
 import com.socialcoisa.rede.messaging.domain.ConversationParticipant;
 import com.socialcoisa.rede.messaging.domain.Message;
+import com.socialcoisa.rede.shared.domain.TimestampIdCursor;
 import com.socialcoisa.rede.shared.web.ApiException;
 import com.socialcoisa.rede.shared.web.CurrentUser;
 import com.socialcoisa.rede.shared.web.CurrentUserResolver;
@@ -126,7 +127,7 @@ class MessagingContractController {
 		if (!messagingService.isParticipant(conversationId, user.id().value())) {
 			throw new ApiException(403, "NOT_PARTICIPANT", "Voce nao participa desta conversa.");
 		}
-		Instant before = cursorCodec.decode(cursor).orElse(null);
+		TimestampIdCursor before = cursorCodec.decodePosition(cursor).orElse(null);
 		List<Message> msgs = messagingService.getMessages(conversationId, user.id().value(), before, limit);
 		var summaries = messagingService.reactionSummaries(msgs.stream().map(Message::id).toList(),
 			user.id().value());
@@ -155,9 +156,10 @@ class MessagingContractController {
 					m.e2e(), m.iv(), m.replyToId(), replyView);
 			})
 			.toList();
-		// Pagina cheia => ainda ha mensagens mais antigas: o cursor aponta para a mais antiga desta pagina.
+		// Pagina cheia pode exigir uma ultima consulta vazia.
 		String nextCursor = msgs.size() == limit && !msgs.isEmpty()
-			? cursorCodec.encode(msgs.get(msgs.size() - 1).createdAt()) : null;
+			? cursorCodec.encodePosition(new TimestampIdCursor(msgs.get(msgs.size() - 1).createdAt(),
+				msgs.get(msgs.size() - 1).id())) : null;
 		return new PageResponse<>(items, nextCursor);
 	}
 

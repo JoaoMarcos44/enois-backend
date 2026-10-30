@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.socialcoisa.rede.notifications.domain.Notification;
+import com.socialcoisa.rede.shared.domain.TimestampIdCursor;
 
 public interface NotificationRepository {
 
@@ -11,7 +12,7 @@ public interface NotificationRepository {
 
 	Optional<Notification> findById(String id);
 
-	List<Notification> findByUserId(String userId, java.time.Instant before, int limit);
+	List<Notification> findByUserId(String userId, TimestampIdCursor before, int limit);
 
 	void markRead(String notificationId);
 

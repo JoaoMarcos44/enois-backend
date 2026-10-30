@@ -9,6 +9,7 @@ import java.util.Optional;
 import com.socialcoisa.rede.messaging.domain.Conversation;
 import com.socialcoisa.rede.messaging.domain.ConversationParticipant;
 import com.socialcoisa.rede.messaging.domain.Message;
+import com.socialcoisa.rede.shared.domain.TimestampIdCursor;
 
 public interface MessagingRepository {
 
@@ -50,7 +51,7 @@ public interface MessagingRepository {
 
 	void saveMessage(Message message);
 
-	List<Message> findMessagesByConversation(String conversationId, String viewerId, java.time.Instant before,
+	List<Message> findMessagesByConversation(String conversationId, String viewerId, TimestampIdCursor before,
 			int limit);
 
 	Optional<Message> findLastMessage(String conversationId);

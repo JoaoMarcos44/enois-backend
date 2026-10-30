@@ -548,6 +548,11 @@ Contrato completo, regras e códigos de erro em [`STUDY_PAIRS.md`](STUDY_PAIRS.m
 | POST | `/api/conversations/{conversationId}/messages/{messageId}/reactions` | Reagir a mensagem | Sim |
 | GET | `/api/conversations/{conversationId}/messages/{messageId}/reactions` | Reações da mensagem | Sim |
 
+`GET /api/conversations/{conversationId}/messages` usa `limit=50` por padrão. Mensagens são
+ordenadas por `createdAt DESC, id DESC`; `nextCursor` retoma essa posição, inclusive nos empates.
+Envie a string recebida integralmente como `cursor`, sem interpretar seu conteúdo. Mensagens
+apagadas para o leitor são excluídas antes de paginar.
+
 ---
 
 ## Notificações
@@ -562,6 +567,16 @@ Contrato completo, regras e códigos de erro em [`STUDY_PAIRS.md`](STUDY_PAIRS.m
 | GET | `/api/notifications/digest/unsubscribe?token=` | Descadastro do resumo semanal (link do e-mail, HTML) | Não (token) |
 | POST | `/api/notifications/digest/unsubscribe?token=` | Descadastro em um clique (RFC 8058, cliente de e-mail): 200/400 sem corpo | Não (token) |
 | POST | `/api/blogs/descadastrar?token=` | Mesmo descadastro em um clique para a newsletter do blog | Não (token) |
+
+`GET /api/notifications` usa `limit=20` por padrão e ordem `createdAt DESC, id DESC`.
+O cursor vem da última notificação da página consultada, antes de filtrar atores bloqueados
+nos dois sentidos. Uma página com `items: []` pode ter `nextCursor`: continue enquanto ele
+não for `null`. Uma página cheia pode exigir uma consulta final vazia.
+
+Nas duas listagens, cursores novos são opacos e versionados. Timestamp ISO-8601 legado ainda
+é aceito e significa estritamente `createdAt < cursor`: não retoma irmãos do mesmo instante,
+nem recupera empates já pulados. Para recuperar esses itens, reinicie sem cursor. Cursor
+ausente ou branco inicia a listagem; formato, versão ou conteúdo inválido retorna `400 INVALID_CURSOR`.
 
 Preferências (GET e resposta do PUT):
 

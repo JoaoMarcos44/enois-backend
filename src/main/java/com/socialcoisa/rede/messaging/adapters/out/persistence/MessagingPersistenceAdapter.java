@@ -16,6 +16,7 @@ import com.socialcoisa.rede.messaging.application.port.out.MessagingRepository;
 import com.socialcoisa.rede.messaging.domain.Conversation;
 import com.socialcoisa.rede.messaging.domain.ConversationParticipant;
 import com.socialcoisa.rede.messaging.domain.Message;
+import com.socialcoisa.rede.shared.domain.TimestampIdCursor;
 import com.socialcoisa.rede.shared.web.CursorCodec;
 
 @Repository
@@ -147,11 +148,11 @@ class MessagingPersistenceAdapter implements MessagingRepository {
 
 	@Override
 	public List<Message> findMessagesByConversation(String conversationId, String viewerId,
-			java.time.Instant before, int limit) {
+			TimestampIdCursor before, int limit) {
 		var page = PageRequest.of(0, limit);
 		var messages = before == null
 			? messageRepo.visibleMessages(conversationId, viewerId, page)
-			: messageRepo.visibleMessagesBefore(conversationId, viewerId, before, page);
+			: messageRepo.visibleMessagesBefore(conversationId, viewerId, before.createdAt(), before.id(), page);
 		return messages.stream().map(MessageJpaEntity::toDomain).toList();
 	}
 

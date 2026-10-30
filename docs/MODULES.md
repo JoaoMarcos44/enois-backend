@@ -87,8 +87,10 @@ As rotas públicas e o comportamento de caminhos fora da superfície continuam c
 
 | Função | Descrição |
 |---|---|
-| `decode(String cursor)` | Decodifica cursor base64 para Instant |
-| `encode(Instant instant)` | Codifica Instant para string base64 |
+| `decode(String cursor)` | Interpreta timestamp ISO-8601 para Instant; mantém consumidores existentes |
+| `encode(Instant instant)` | Retorna timestamp ISO-8601 |
+| `decodePosition(String cursor)` | Interpreta cursor opaco versionado ou timestamp legado como `TimestampIdCursor` |
+| `encodePosition(TimestampIdCursor cursor)` | Emite posição opaca `(createdAt, id)` para mensagens e notificações |
 
 ### OperationalController
 
@@ -902,7 +904,7 @@ A ocorrência nova herda cidade/UF da anterior (o encontro segue no mesmo lugar 
 | `getConversation(String conversationId)` | Busca conversa por ID |
 | `getParticipants(String conversationId)` | Lista participantes |
 | `countUnread(String conversationId, String userId)` | Conta mensagens não lidas |
-| `getMessages(String conversationId, Instant cursor, int limit)` | Lista mensagens com cursor |
+| `getMessages(String conversationId, String viewerId, TimestampIdCursor cursor, int limit)` | Lista mensagens visíveis ao leitor em `createdAt DESC, id DESC` |
 | `hideMessages(String conversationId, String userId, List<String> messageIds)` | Valida o lote e oculta mensagens somente para o solicitante |
 | `getLastMessageText(String conversationId)` | Texto da última mensagem |
 | `getLastMessageTime(String conversationId)` | Timestamp da última mensagem |
@@ -950,7 +952,7 @@ inválidas são rejeitadas integralmente. A operação exige autenticação e ch
 | `create(String userId, String kind, String actorId, String title, String body, String href, String ctaLabel)` | Cria notificação |
 | `markRead(String notificationId, String userId)` | Marca como lida |
 | `markAllRead(String userId)` | Marca todas como lidas |
-| `list(String userId, int limit)` | Lista notificações |
+| `list(String userId, TimestampIdCursor cursor, int limit)` | Lista notificações em `createdAt DESC, id DESC` |
 
 ### NotificationOutboxEventHandler
 
@@ -978,6 +980,14 @@ inválidas são rejeitadas integralmente. A operação exige autenticação e ch
 | `notifications(...)` | GET /api/notifications |
 | `read(...)` | POST /api/notifications/{notificationId}/read |
 | `readAll(...)` | POST /api/notifications/read-all |
+
+A posição usa `shared/domain/TimestampIdCursor`: data e ID viajam juntos entre controller,
+serviço e porta de persistência. Ordem e comparação de IDs usam a mesma collation do banco.
+O predicado retoma datas menores ou, na mesma data, IDs menores. Timestamp legado tem ID
+nulo e só retoma datas menores. O controller calcula o cursor da página bruta antes de
+filtrar atores bloqueados, preservando continuação mesmo quando todos os itens estão ocultos.
+O codec valida versão, data e ID não vazio de até 255 caracteres; cursor opaco acima de 1500
+caracteres é inválido. O contrato de retomada legado e os erros estão em [API.md](API.md#notificações).
 
 ### Preferências e resumo semanal
 

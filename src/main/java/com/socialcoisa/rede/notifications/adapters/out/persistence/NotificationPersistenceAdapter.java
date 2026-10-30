@@ -1,6 +1,5 @@
 package com.socialcoisa.rede.notifications.adapters.out.persistence;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -9,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import com.socialcoisa.rede.notifications.application.port.out.NotificationRepository;
 import com.socialcoisa.rede.notifications.domain.Notification;
+import com.socialcoisa.rede.shared.domain.TimestampIdCursor;
 
 @Repository
 class NotificationPersistenceAdapter implements NotificationRepository {
@@ -30,8 +30,9 @@ class NotificationPersistenceAdapter implements NotificationRepository {
 	}
 
 	@Override
-	public List<Notification> findByUserId(String userId, java.time.Instant before, int limit) {
-		return springData.findByUserId(userId, before, PageRequest.of(0, limit)).stream()
+	public List<Notification> findByUserId(String userId, TimestampIdCursor before, int limit) {
+		return springData.findByUserId(userId, before == null ? null : before.createdAt(),
+			before == null ? null : before.id(), PageRequest.of(0, limit)).stream()
 			.map(NotificationJpaEntity::toDomain)
 			.toList();
 	}

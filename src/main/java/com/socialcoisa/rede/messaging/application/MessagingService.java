@@ -14,6 +14,7 @@ import com.socialcoisa.rede.messaging.domain.Conversation;
 import com.socialcoisa.rede.messaging.domain.ConversationParticipant;
 import com.socialcoisa.rede.messaging.domain.Message;
 import com.socialcoisa.rede.notifications.application.NotificationService;
+import com.socialcoisa.rede.shared.domain.TimestampIdCursor;
 import com.socialcoisa.rede.shared.security.BehavioralTimingGuard;
 import com.socialcoisa.rede.shared.security.UserRateLimiter;
 import com.socialcoisa.rede.shared.web.ApiException;
@@ -384,7 +385,7 @@ public class MessagingService {
 		return repository.countTotalUnread(userId);
 	}
 
-	public List<Message> getMessages(String conversationId, String viewerId, java.time.Instant before, int limit) {
+	public List<Message> getMessages(String conversationId, String viewerId, TimestampIdCursor before, int limit) {
 		if (!repository.findConversationById(conversationId).isPresent()) {
 			throw new ApiException(404, "CONVERSATION_NOT_FOUND", "Conversa nao encontrada.");
 		}

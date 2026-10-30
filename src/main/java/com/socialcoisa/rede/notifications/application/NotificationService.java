@@ -1,7 +1,6 @@
 package com.socialcoisa.rede.notifications.application;
 
 import java.time.Clock;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -11,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.socialcoisa.rede.notifications.application.port.out.NotificationRepository;
 import com.socialcoisa.rede.notifications.domain.Notification;
+import com.socialcoisa.rede.shared.domain.TimestampIdCursor;
 import com.socialcoisa.rede.shared.web.ApiException;
 
 @Service
@@ -54,7 +54,7 @@ public class NotificationService {
 		repository.markAllReadByUser(userId);
 	}
 
-	public List<Notification> list(String userId, java.time.Instant before, int limit) {
+	public List<Notification> list(String userId, TimestampIdCursor before, int limit) {
 		return repository.findByUserId(userId, before, limit);
 	}
 

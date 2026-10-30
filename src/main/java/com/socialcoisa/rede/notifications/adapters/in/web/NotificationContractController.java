@@ -1,6 +1,5 @@
 package com.socialcoisa.rede.notifications.adapters.in.web;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,6 +24,7 @@ import com.socialcoisa.rede.profile.application.NameStyleView;
 import com.socialcoisa.rede.profile.application.port.out.UserProfileRepository;
 import com.socialcoisa.rede.profile.domain.UserProfile;
 import com.socialcoisa.rede.shared.blocks.BlockedUsersReader;
+import com.socialcoisa.rede.shared.domain.TimestampIdCursor;
 import com.socialcoisa.rede.shared.web.CurrentUser;
 import com.socialcoisa.rede.shared.web.CurrentUserResolver;
 import com.socialcoisa.rede.shared.web.CursorCodec;
@@ -57,10 +57,11 @@ class NotificationContractController {
 	PageResponse<NotificationView> notifications(@RequestHeader(value = "X-Session-Token", required = false) String sessionToken,
 			@RequestParam(required = false) String cursor, @RequestParam(defaultValue = "20") int limit) {
 		CurrentUser user = currentUserResolver.resolve(sessionToken);
-		Instant before = cursorCodec.decode(cursor).orElse(null);
+		TimestampIdCursor before = cursorCodec.decodePosition(cursor).orElse(null);
 		// Bloqueio: notificacao de quem foi bloqueado (ou de quem bloqueou) nao aparece mais.
 		Set<String> hidden = blockedUsersReader.hiddenIdsFor(user.id().value());
-		List<Notification> notifications = notificationService.list(user.id().value(), before, limit).stream()
+		List<Notification> fetched = notificationService.list(user.id().value(), before, limit);
+		List<Notification> notifications = fetched.stream()
 			.filter(n -> n.actorId() == null || !hidden.contains(n.actorId()))
 			.toList();
 		Map<String, UserProfile> profiles = resolveActors(notifications);
@@ -77,8 +78,9 @@ class NotificationContractController {
 					n.isRead(), n.href(), n.ctaLabel());
 			})
 			.toList();
-		String nextCursor = notifications.size() == limit
-			? cursorCodec.encode(notifications.get(notifications.size() - 1).createdAt()) : null;
+		String nextCursor = fetched.size() == limit && !fetched.isEmpty()
+			? cursorCodec.encodePosition(new TimestampIdCursor(fetched.get(fetched.size() - 1).createdAt(),
+				fetched.get(fetched.size() - 1).id())) : null;
 		return new PageResponse<>(items, nextCursor);
 	}
 
